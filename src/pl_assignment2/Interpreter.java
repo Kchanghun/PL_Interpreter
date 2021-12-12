@@ -1,5 +1,7 @@
 package pl_assignment2;
 import java.util.*;
+
+import parser.Token;
 interface Token{
 	int EOF=0;
 	int start=1;
@@ -24,8 +26,8 @@ interface KindOfID{
 public class Interpreter extends SymbolTable{
 	List<String> input=new ArrayList<>();
 	Stack<String> RuntimeStack=new Stack<>();	//Run time stack
-	HashMap<String,Integer> AR_size=new HashMap<>();	//함수별 ARI size 저장
-	int beginFrom=0;	//실행을위해 main함수 시작 index 저
+	HashMap<String,Integer> AR_size=new HashMap<>();	//�븿�닔蹂� ARI size ���옣
+	int beginFrom=0;	//�떎�뻾�쓣�쐞�빐 main�븿�닔 �떆�옉 index ��
 	int nextToken;
 	String lexeme;
 	boolean error=false;
@@ -68,7 +70,24 @@ public class Interpreter extends SymbolTable{
 					return;
 				}
 				else if()
-				
+					if((context[splitter]>64&&context[splitter]<91)||(context[splitter]>96&&context[splitter]<123)||context[splitter]==95) {
+						next_token=Token.ident;
+						token_string+=context[splitter];
+						splitter+=1;
+						while((context[splitter]>64&&context[splitter]<91)||(context[splitter]>96&&context[splitter]<123)||context[splitter]==95
+								||(context[splitter]>47&&context[splitter]<58)) {
+							//accept=false;
+							token_string+=context[splitter];
+							splitter+=1;
+							if(context[splitter]<=32||(context[splitter]>39&&context[splitter]<44)||
+									context[splitter]==45||context[splitter]==47||context[splitter]==58||context[splitter]==59) {
+								//accept=true;
+								break;
+							}
+						}
+						splitter-=1;
+						
+					}
 			}
 			splitter=0;
 		}
