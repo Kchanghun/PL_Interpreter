@@ -11,26 +11,24 @@ public class Main {
 
 	public static void main(String[] args) {
 		Path path;
-		if(args[0].equals("-v")) {
-			path= Paths.get(args[1]);
-		}
-		else{
-			path= Paths.get(args[0]);
-		}
+		//path=Paths.get(args[0]);
+		path=Paths.get("/Users/errasi/Desktop/test.txt");
 		Charset charset=Charset.forName("UTF-8");
-		List<String> lines=null;
+		List<String> inputText=null;
 		try {
-			lines=Files.readAllLines(path,charset);
+			inputText=Files.readAllLines(path,charset);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	
-		String context="";
-		int[] sizeOfLine=new int[lines.size()];
-		for(int i=0;i<lines.size();i++) {
-			context+=lines.get(i)+" ";
-			sizeOfLine[i]=context.length()-1;
+		Interpreter interpreter = new Interpreter(inputText);
+		
+		String a="";
+		if(a.equals("")) {
+			System.out.println("adsf");
 		}
+		
+		
 		
 	}
 
