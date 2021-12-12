@@ -23,11 +23,17 @@ public class Main {
 	
 		Interpreter interpreter = new Interpreter(inputText);
 		
-		String a="";
-		if(a.equals("")) {
-			System.out.println("adsf");
+
+		//파싱 
+		interpreter.reculsive_descent_parser();
+		
+		//파싱 과정에서 에러 발생 
+		if(interpreter.error) {
+			return;
 		}
 		
+		//실행 
+		interpreter.execute();
 		
 		
 	}

@@ -29,7 +29,7 @@ public class Interpreter extends SymbolTable{
 	int nextToken;
 	String lexeme;
 	boolean error=false;
-	int analyze_from=0;
+	int splitter=0;
 	int analyze_line=0;
 	Interpreter(List<String> inputText){
 		super();
@@ -42,34 +42,35 @@ public class Interpreter extends SymbolTable{
 		char[] currLine;
 		for(;analyze_line<input.size();analyze_line++) {
 			currLine=input.get(analyze_line).toCharArray();
-			for(;analyze_from<currLine.length;analyze_from++) {
-				if(currLine[analyze_from]==',') {
-					analyze_from+=1;
+			for(;splitter<currLine.length;splitter++) {
+				if(currLine[splitter]==',') {
+					splitter+=1;
 					lexeme=",";
 					nextToken=Token.comma;
 					return;
 				}
-				else if(currLine[analyze_from]==';') {
-					analyze_from+=1;
+				else if(currLine[splitter]==';') {
+					splitter+=1;
 					lexeme=";";
 					nextToken=Token.semicolon;
 					return;
 				}
-				else if(currLine[analyze_from]=='{') {
-					analyze_from+=1;
+				else if(currLine[splitter]=='{') {
+					splitter+=1;
 					lexeme="{";
 					nextToken=Token.left_brace;
 					return;
 				}
-				else if(currLine[analyze_from]=='}') {
-					analyze_from+=1;
+				else if(currLine[splitter]=='}') {
+					splitter+=1;
 					lexeme="}";
 					nextToken=Token.right_brace;
 					return;
 				}
+				else if()
 				
 			}
-			analyze_from=0;
+			splitter=0;
 		}
 	}
 	public void reculsive_descent_parser() {
