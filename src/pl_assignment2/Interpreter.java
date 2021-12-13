@@ -1,7 +1,6 @@
 package pl_assignment2;
 import java.util.*;
 
-import parser.Token;
 interface Token{
 	int EOF=0;
 	int start=1;
@@ -25,14 +24,18 @@ interface KindOfID{
 }
 public class Interpreter extends SymbolTable{
 	List<String> input=new ArrayList<>();
-	Stack<String> RuntimeStack=new Stack<>();	//Run time stack
-	HashMap<String,Integer> AR_size=new HashMap<>();	//�븿�닔蹂� ARI size ���옣
-	int beginFrom=0;	//�떎�뻾�쓣�쐞�빐 main�븿�닔 �떆�옉 index ��
 	int nextToken;
 	String lexeme;
 	boolean error=false;
 	int splitter=0;
 	int analyze_line=0;
+	
+	Stack<String> RuntimeStack=new Stack<>();	//Run time stack
+	HashMap<String,Integer> AR_size=new HashMap<>();
+	String currFunction;
+	HashMap<String,Integer> beginFrom=new HashMap<>();
+	HashMap<String,Integer> bottomOf=new HashMap<>();
+	
 	Interpreter(List<String> inputText){
 		super();
 		input=inputText;
@@ -69,28 +72,29 @@ public class Interpreter extends SymbolTable{
 					nextToken=Token.right_brace;
 					return;
 				}
-				else if()
-					if((context[splitter]>64&&context[splitter]<91)||(context[splitter]>96&&context[splitter]<123)||context[splitter]==95) {
-						next_token=Token.ident;
-						token_string+=context[splitter];
+				else if((currLine[splitter]>64&&currLine[splitter]<91)||(currLine[splitter]>96&&currLine[splitter]<123)||currLine[splitter]==95) {
+					nextToken=Token.identifier;
+					lexeme+=currLine[splitter];
+					splitter+=1;
+					while((currLine[splitter]>64&&currLine[splitter]<91)||(currLine[splitter]>96&&currLine[splitter]<123)||currLine[splitter]==95
+							||(currLine[splitter]>47&&currLine[splitter]<58)) {
+						lexeme+=currLine[splitter];
 						splitter+=1;
-						while((context[splitter]>64&&context[splitter]<91)||(context[splitter]>96&&context[splitter]<123)||context[splitter]==95
-								||(context[splitter]>47&&context[splitter]<58)) {
-							//accept=false;
-							token_string+=context[splitter];
-							splitter+=1;
-							if(context[splitter]<=32||(context[splitter]>39&&context[splitter]<44)||
-									context[splitter]==45||context[splitter]==47||context[splitter]==58||context[splitter]==59) {
-								//accept=true;
-								break;
-							}
-						}
-						splitter-=1;
-						
 					}
+					if(lexeme.equals("variable")) {
+						nextToken=Token.var_definitions;
+					}
+					return;
+				}
+				else if(currLine[splitter]<33) {
+					//ignore White space
+					continue;
+				}
 			}
 			splitter=0;
 		}
+		nextToken=Token.EOF;
+		return;
 	}
 	public void reculsive_descent_parser() {
 		lexical();
@@ -165,6 +169,7 @@ public class Interpreter extends SymbolTable{
 		case KindOfID.function:
 			check_duplicate(lexeme,which_identifier);
 			identifier4Function.put(lexeme, 1);
+			beginFrom.put(lexeme, analyze_line);
 			break;
 		case KindOfID.not_definition:
 			//not save to Symbol Table
@@ -212,6 +217,11 @@ public class Interpreter extends SymbolTable{
 					System.out.println("Duplicate declaration of the identifier or the function name: "+lexeme);
 					return;
 				}
+				else if(reserved_word.containsKey(lexeme)) {
+					error=true;
+					System.out.println("Identifier cannot be same with Reserved Word");
+					return;
+				}
 			}
 			else if(which_identifier==KindOfID.function) {
 				if(identifier4Variable.containsKey(lexeme)) {
@@ -224,10 +234,165 @@ public class Interpreter extends SymbolTable{
 					System.out.println("Duplicate declaration of the function name: "+lexeme);
 					return;
 				}
+				else if(reserved_word.containsKey(lexeme)) {
+					error=true;
+					System.out.println("Function name cannot be same with Reserved Word");
+					return;
+				}
 			}
 		}
 	}
 	public void execute() {
+		String prevLexeme="";
+		analyze_line=beginFrom.get("main");
+		nextToken=Token.identifier;
+		int variable_count=0;
+		int where2return=0;
+		HashMap<String,Integer>var_definition_count=new HashMap<>();
 		
+		bottomOf.put("main", 0);
+		
+		while(nextToken!=Token.EOF) {
+			prevLexeme=lexeme;
+			lexical();
+			if(lexeme.equals("{")) {
+				currFunction=prevLexeme;
+				var_definition_count.put(currFunction, 0);
+			}
+			else if(lexeme.equals("}")) {
+				//function exit
+				if(currFunction.equals("main")) {
+					nextToken=Token.EOF;
+					continue;
+				}
+				String[] returnTo=RuntimeStack.get(bottomOf.get(currFunction)).split(":");
+				
+				analyze_line=beginFrom.get(returnTo[0])+var_definition_count.get(returnTo[0])+Integer.parseInt(returnTo[1])+1;
+			
+				for(int i=0;i<AR_size.get(currFunction);i++) {
+					RuntimeStack.pop();
+				}
+				AR_size.remove(currFunction);
+				
+				splitter=0;
+				currFunction=returnTo[0];
+			}
+			else if(lexeme.equals("call")) {
+				lexical();
+				
+				if(!identifier4Function.containsKey(lexeme)) {
+					error=true;
+					System.out.println("Call to undefined function: "+lexeme);
+					break;
+				}
+				
+				where2return=analyze_line-beginFrom.get(currFunction)-var_definition_count.get(currFunction);
+				RuntimeStack.push(currFunction+":"+where2return);
+				bottomOf.put(lexeme, RuntimeStack.size()-1);
+				RuntimeStack.push(""+bottomOf.get(currFunction));
+				
+				variable_count=0;
+				analyze_line=beginFrom.get(lexeme);
+				splitter=0;
+			}
+			else if(lexeme.equals("variable")) {
+				
+				var_definition_count.put(currFunction, var_definition_count.get(currFunction)+1);
+			
+				while(nextToken!=Token.semicolon) {
+					lexical();
+					if(nextToken!=Token.comma&&nextToken!=Token.semicolon) {
+						RuntimeStack.push(lexeme);
+						variable_count+=1;
+					}
+				}
+				
+				if(currFunction.equals("main")) {
+					AR_size.put(currFunction, variable_count);
+				}
+				else {
+					AR_size.put(currFunction, variable_count+2);
+				}
+				
+			}
+			else if(lexeme.equals("print_ari")) {
+				print_ari();
+			}
+			else if(identifier4Variable.containsKey(lexeme)) {
+				reference_variable(lexeme,currFunction);
+				lexical();
+			}
+			else if((!identifier4Function.containsKey(lexeme))&&(nextToken==Token.identifier)) {
+				error=true;
+				System.out.println("Reference to undefined variable: "+lexeme);
+				break;
+			}
+		}
+	}
+	public void print_ari() {
+		int indexOfStack=RuntimeStack.size()-1;
+		for(Map.Entry<String,Integer> entry:sortReverse(AR_size).entrySet()) {
+			System.out.print(entry.getKey()+": ");
+			for(int i=entry.getValue();i>0;i--) {
+				if(indexOfStack!=(RuntimeStack.size()-1)) {
+					System.out.print("\t");
+				}
+				if(i>2||entry.getKey().equals("main")) {
+					System.out.println("Local variable: "+RuntimeStack.get(indexOfStack));
+				}
+				else if(i==2) {
+					System.out.println("Dynamic Link: "+RuntimeStack.get(indexOfStack));
+				}
+				else if(i==1) {
+					System.out.println("Return Address: "+RuntimeStack.get(indexOfStack));
+				}
+				indexOfStack-=1;
+			}
+		}
+		System.out.println();
+	}
+	public void reference_variable(String var_name,String currFunction) {
+		String fromFunction=currFunction;
+		int link_count=0;
+		int local_offset=0;
+		int linkTo=bottomOf.get(currFunction);
+		boolean find=false;
+		while(!find) {
+			if(RuntimeStack.get(linkTo+local_offset).equals(var_name)) {
+				find=true;
+			}
+			else {
+				if(AR_size.get(currFunction)==(local_offset+1)) {
+					//move link
+					if(currFunction.equals("main")) {
+						error=true;
+						System.out.println("Cannot Reference variable: "+var_name);
+						break;
+					}
+					link_count+=1;
+					linkTo=Integer.parseInt(RuntimeStack.get(bottomOf.get(currFunction)+1));
+					
+					String[] getFunctionName=RuntimeStack.get(bottomOf.get(currFunction)).split(":");
+					currFunction=getFunctionName[0];
+					local_offset=0;
+				}
+				else {
+					local_offset+=1;
+				}
+			}
+		}
+		if(find) {
+			System.out.println(fromFunction+":"+var_name+" => "+link_count+", "+local_offset+"\n");
+		}
+	}
+	public LinkedHashMap<String,Integer> sortReverse(HashMap<String,Integer> AR_size){
+		List<Map.Entry<String, Integer>> entries=new LinkedList<>(AR_size.entrySet());
+		Collections.sort(entries,(o1,o2)->-1);
+		
+		LinkedHashMap<String,Integer> result=new LinkedHashMap<>();
+		for(Map.Entry<String, Integer>entry:entries) {
+			result.put(entry.getKey(), entry.getValue());
+		}
+		return result;
 	}
 }

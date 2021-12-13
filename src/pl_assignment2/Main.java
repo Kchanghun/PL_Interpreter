@@ -23,18 +23,22 @@ public class Main {
 	
 		Interpreter interpreter = new Interpreter(inputText);
 		
-
-		//파싱 
+		
+		
+		 
+		 //파싱 
 		interpreter.reculsive_descent_parser();
 		
 		//파싱 과정에서 에러 발생 
 		if(interpreter.error) {
 			return;
 		}
-		
+		System.out.println("Syntax O.K.\n");
 		//실행 
 		interpreter.execute();
 		
+		
+		 
 		
 	}
 
