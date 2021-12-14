@@ -26,7 +26,8 @@ public class Interpreter extends SymbolTable{
 	List<String> input=new ArrayList<>();
 	int nextToken;
 	String lexeme;
-	boolean error=false;
+	boolean SyntaxError=false;
+	boolean DuplicateError=false;
 	int splitter=0;
 	int analyze_line=0;
 	
@@ -41,8 +42,8 @@ public class Interpreter extends SymbolTable{
 		input=inputText;
 	
 	}
+	//set lexeme & set nextToken
 	public void lexical() {
-		//set lexeme & set nextToken
 		lexeme="";
 		char[] currLine;
 		for(;analyze_line<input.size();analyze_line++) {
@@ -76,8 +77,8 @@ public class Interpreter extends SymbolTable{
 					nextToken=Token.identifier;
 					lexeme+=currLine[splitter];
 					splitter+=1;
-					while((currLine[splitter]>64&&currLine[splitter]<91)||(currLine[splitter]>96&&currLine[splitter]<123)||currLine[splitter]==95
-							||(currLine[splitter]>47&&currLine[splitter]<58)) {
+					while((splitter<currLine.length)&&((splitter<currLine.length)&&(currLine[splitter]>64&&currLine[splitter]<91)||(currLine[splitter]>96&&currLine[splitter]<123)||currLine[splitter]==95
+							||(currLine[splitter]>47&&currLine[splitter]<58))) {
 						lexeme+=currLine[splitter];
 						splitter+=1;
 					}
@@ -178,64 +179,60 @@ public class Interpreter extends SymbolTable{
 	}
 	public void semicolon() {
 		if(!lexeme.equals(";")) {
-			error=true;
-			System.out.println("Wrong Grammer");
+			SyntaxError=true;
 		}
 		lexical();
 	}
 	public void left_brace() {
 		if(!lexeme.equals("{")) {
-			error=true;
-			System.out.println("Wrong Grammer");
+			SyntaxError=true;
 		}
 		lexical();
 	}
 	public void right_brace() {
 		if(!lexeme.equals("}")) {
-			error=true;
-			System.out.println("Wrong Grammer");
+			SyntaxError=true;
 		}
 		lexical();
 	}
 	public void comma() {
 		if(!lexeme.equals(",")) {
-			error=true;
-			System.out.println("Wrong Grammer");
+			SyntaxError=true;
 		}
 		lexical();
 	}
 	public void check_duplicate(String lexeme,int which_identifier) {
-		if(!error) {
+		if((!DuplicateError)&&(!SyntaxError)) {
 			if(which_identifier==KindOfID.variable) {
 				if(variableInCurrFunction.containsKey(lexeme)) {
-					error=true;
+					DuplicateError=true;
 					System.out.println("Duplicate declaration of the identifier: "+lexeme);
 					return;
 				}
 				else if(identifier4Function.containsKey(lexeme)) {
-					error=true;
+					DuplicateError=true;
 					System.out.println("Duplicate declaration of the identifier or the function name: "+lexeme);
 					return;
 				}
 				else if(reserved_word.containsKey(lexeme)) {
-					error=true;
+					DuplicateError=true;
 					System.out.println("Identifier cannot be same with Reserved Word");
 					return;
 				}
 			}
 			else if(which_identifier==KindOfID.function) {
 				if(identifier4Variable.containsKey(lexeme)) {
-					error=true;
+					DuplicateError=true;
 					System.out.println("Duplicate declaration of the identifier or the function name: "+lexeme);
 					return;
 				}
 				else if(identifier4Function.containsKey(lexeme)) {
-					error=true;
+					DuplicateError=true;
 					System.out.println("Duplicate declaration of the function name: "+lexeme);
 					return;
 				}
 				else if(reserved_word.containsKey(lexeme)) {
-					error=true;
+					DuplicateError=true;
 					System.out.println("Function name cannot be same with Reserved Word");
 					return;
 				}
@@ -281,7 +278,7 @@ public class Interpreter extends SymbolTable{
 				lexical();
 				
 				if(!identifier4Function.containsKey(lexeme)) {
-					error=true;
+					//Error!
 					System.out.println("Call to undefined function: "+lexeme);
 					break;
 				}
@@ -323,7 +320,7 @@ public class Interpreter extends SymbolTable{
 				lexical();
 			}
 			else if((!identifier4Function.containsKey(lexeme))&&(nextToken==Token.identifier)) {
-				error=true;
+				//Error!
 				System.out.println("Reference to undefined variable: "+lexeme);
 				break;
 			}
@@ -365,7 +362,7 @@ public class Interpreter extends SymbolTable{
 				if(AR_size.get(currFunction)==(local_offset+1)) {
 					//move link
 					if(currFunction.equals("main")) {
-						error=true;
+						//Error!
 						System.out.println("Cannot Reference variable: "+var_name);
 						break;
 					}

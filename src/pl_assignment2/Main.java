@@ -10,9 +10,8 @@ import java.util.List;
 public class Main {
 
 	public static void main(String[] args) {
-		Path path;
-		//path=Paths.get(args[0]);
-		path=Paths.get("/Users/errasi/Desktop/test.txt");
+		//get path of txt file
+		Path path=Paths.get(args[0]);
 		Charset charset=Charset.forName("UTF-8");
 		List<String> inputText=null;
 		try {
@@ -21,20 +20,22 @@ public class Main {
 			e.printStackTrace();
 		}
 	
+		//send all context of the txt file to interpreter
 		Interpreter interpreter = new Interpreter(inputText);
 		
-		
-		
-		 
-		 //파싱 
+		//syntax check
 		interpreter.reculsive_descent_parser();
 		
-		//파싱 과정에서 에러 발생 
-		if(interpreter.error) {
+		//if 
+		if(interpreter.SyntaxError) {
+			System.out.println("Syntax Error.\n");
+			return;
+		}
+		else if(interpreter.DuplicateError) {
 			return;
 		}
 		System.out.println("Syntax O.K.\n");
-		//실행 
+
 		interpreter.execute();
 		
 		
