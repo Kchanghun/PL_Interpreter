@@ -34,8 +34,9 @@ public class Main {
 		else if(interpreter.DuplicateError) {
 			return;
 		}
+		
+		//if syntax OK, then execute the txt code
 		System.out.println("Syntax O.K.\n");
-
 		interpreter.execute();
 		
 		
